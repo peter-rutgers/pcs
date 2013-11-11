@@ -33,6 +33,7 @@ void calculate_results(const struct parameters* p, struct results *result, doubl
 
 void do_compute(const struct parameters* p, struct results *result)
 {
+    printf("what the\n");
     double *told, *tnew, *tmp;
     double *upper, *row, *lower;
     double cond, diff, t1;
@@ -42,6 +43,7 @@ void do_compute(const struct parameters* p, struct results *result)
 
     gettimeofday(&now,NULL);
     t1 = now.tv_sec + now.tv_usec / 1e6;
+    printf("test %g", t1);
 
     if (!(told = calloc(p->N * p->M, sizeof(double)))) die("calloc");
     if (!(tnew = calloc(p->N * p->M, sizeof(double)))) die("calloc");
