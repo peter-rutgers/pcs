@@ -1,0 +1,10 @@
+heat_pics-main.o: ../src/main.c ../src/compute.h ../src/input.h \
+ /usr/lib/gcc/x86_64-linux-gnu/4.7/include/stddef.h ../src/output.h
+
+../src/compute.h:
+
+../src/input.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/4.7/include/stddef.h:
+
+../src/output.h:
