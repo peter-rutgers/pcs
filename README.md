@@ -1,2 +1,2 @@
-Programming Concurrent Systems practical
+Programming Concurrent Systems practical  
 Peter Rutgers & Thomas Schoegje
