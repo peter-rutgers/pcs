@@ -1,0 +1,1 @@
+fibo1.o: fibo1.c

@@ -1,0 +1,8 @@
+main_outputdemo.o: main_outputdemo.c ../src/output.h ../src/input.h \
+ /cm/shared/apps/gcc/4.4.6/lib/gcc/x86_64-unknown-linux-gnu/4.4.6/include/stddef.h
+
+../src/output.h:
+
+../src/input.h:
+
+/cm/shared/apps/gcc/4.4.6/lib/gcc/x86_64-unknown-linux-gnu/4.4.6/include/stddef.h:
