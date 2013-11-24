@@ -1,9 +1,20 @@
+// Thomas Schoegje & Peter Rutgers
+// 10068767
+//
+// Please note that running this code requires fairly new openmp functionality
+// and gcc4.8.2 is necessary. One way to get this working on DAS4 is to add
+// the following to your .bashrc (22 nov 2013)
+// export LD_LIBRARY_PATH=/home/rdouma/gcc/ins/lib/:$LD_LIBRARY_PATH
+// export PATH="/home/rdouma/gcc/ins/bin:$PATH"
+
 #include <sys/time.h>
 #include <math.h>
 #include <stdlib.h>
 #include "compute.h"
+#include "omp.h"
 
 #ifdef GEN_PICTURES
+//Not necessary for our tests, so we ignore possible optimisations for it
 static void do_draw(const struct parameters *p,
              size_t key, size_t h, size_t w,
              double (*restrict g)[h][w])
@@ -23,10 +34,24 @@ static void do_copy(size_t h, size_t w,
     size_t i;
 
     /* copy left and right column to opposite border */
-    for (i = 0; i < h; ++i) {
-        (*g)[i][w-1] = (*g)[i][1];
-        (*g)[i][0] = (*g)[i][w-2];
-    }
+    //depending on how large the task is, the overhead would only slow the
+    //task down. The commented code was part of an experiment to see if n and
+    //m ever get so large as to be able to usefully optimise regardless
+    //of the thread creation overhead
+    //if(h * w >=  1000000){
+        for (i = 0; i < h; ++i) {
+            (*g)[i][w-1] = (*g)[i][1];
+            (*g)[i][0] = (*g)[i][w-2];
+        }
+    //}
+    /*else{
+        #pragma omp parallel for
+        for (i = 0; i < h; ++i) {
+        //printf("%d threads\n\n",omp_get_num_threads());
+            (*g)[i][w-1] = (*g)[i][1];
+            (*g)[i][0] = (*g)[i][w-2];
+        }
+    } */
 }
 
 static void fill_report(const struct parameters *p, struct results *r,
@@ -41,6 +66,9 @@ static void fill_report(const struct parameters *p, struct results *r,
     double sum = 0.0;
     struct timeval after;
 
+    //Based on previous experiment with the initialisation,
+    //it was determined the thread creation overhead would not be useful
+    //here either (the max/min could easily be found using new openmp versions)
     for (size_t i = 1; i < h - 1; ++i)
         for (size_t j = 1; j < w - 1; ++j) 
         {
@@ -86,6 +114,7 @@ void do_compute(const struct parameters* p, struct results *r)
     static const double c_cdiag = 0.25 / (M_SQRT2 + 1.0);
 
     /* set initial temperatures and conductivities */
+    //Again, not worth it
     for (i = 1; i < h - 1; ++i)
         for (j = 1; j < w - 1; ++j) 
         {
@@ -94,6 +123,7 @@ void do_compute(const struct parameters* p, struct results *r)
         }
 
     /* smear outermost row to border */
+    //@optimisation: same as last loop
     for (j = 1; j < w-1; ++j) {
         (*g1)[0][j] = (*g2)[0][j] = (*g1)[1][j];
         (*g1)[h-1][j] = (*g2)[h-1][j] = (*g1)[h-2][j];
@@ -107,6 +137,7 @@ void do_compute(const struct parameters* p, struct results *r)
     double (*restrict src)[h][w] = g2;
     double (*restrict dst)[h][w] = g1;
 
+    //Can't parallellise when dependant on prev iteration
     for (iter = 1; iter <= p->maxiter; ++iter)
     {
 #ifdef GEN_PICTURES
@@ -119,8 +150,15 @@ void do_compute(const struct parameters* p, struct results *r)
         do_copy(h, w, src);
 
         /* compute */
+        // Main location for optimisation gains; every cell could
+        // be a seperate chunk to compute (dst).
+        // If using an older openmp version, instead of using the
+        // maxp option you could fill a new array with all values for
+        // diff and manually select the highest one.
         maxdiff = 0.0;
-        for (i = 1; i < h - 1; ++i)
+        
+	#pragma omp parallel for reduction(max : maxdiff) schedule(static)
+	for (i = 1; i < h - 1; ++i)
             for (j = 1; j < w - 1; ++j)
             {
                 double w = (*c)[i][j];
@@ -156,4 +194,5 @@ void do_compute(const struct parameters* p, struct results *r)
     free(c);
     free(g2);
     free(g1);
+
 }
